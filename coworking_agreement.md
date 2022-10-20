@@ -36,4 +36,3 @@ Tara: encouraging communication
 ## Signatures
 ___Tara Alsaidi______ __Devin Taylor___
 Date: ____10/19/2022_____
->>>>>>> 72bad9854898470187edf459381db067e6b05e69
