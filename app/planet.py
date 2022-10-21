@@ -30,3 +30,23 @@ def get_planets():
         response.append(planet_dict)
 
     return jsonify(response), 200
+
+    
+
+@planet_bp.route("/<planet_id>", methods=["GET"])
+def get_specific_planet(planet_id):
+    try:
+        varified_id = int(planet_id)
+    except ValueError:
+        return jsonify("invalid ID. ID must be an integer"), 400
+
+    for planet in planets:
+        if planet.id == varified_id:
+            planet_dict = {
+                "id": planet.id,
+                "name": planet.name,
+                "description": planet.description,
+                "position": planet.position
+            }
+            return jsonify(planet_dict), 200
+    return jsonify(f"ID: '{varified_id}' not found"), 404
