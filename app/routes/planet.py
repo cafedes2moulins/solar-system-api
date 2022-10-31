@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, abort, make_response
 from app import db
 from app.models.planet import Planet
 
@@ -33,29 +33,6 @@ def get_planets():
         response.append(planet_dict)
 
     return jsonify(response), 200
-
-    
-
-@planet_bp.route("/<planet_id>", methods=["GET"])
-def get_specific_planet(planet_id):
-
-    planets = Planet.query.filter_by(id = planet_id )
-    try:
-        verified_id = int(planet_id)
-    except ValueError:
-        return jsonify("invalid ID. ID must be an integer"), 400
-
-    for planet in planets:
-        if planet.id == verified_id:
-            planet_dict = {
-                "id": planet.id,
-                "name": planet.name,
-                "description": planet.description,
-                "position": planet.position
-            }
-            return jsonify(planet_dict), 200
-    return jsonify(f"ID: '{verified_id}' not found"), 404
-
     
 
 
@@ -73,3 +50,63 @@ def add_planet():
     db.session.commit()
 
     return {"id": new_planet.id}, 201
+
+
+
+def get_one_planet_or_abort(planet_id):
+    try:
+        verified_id = int(planet_id)
+    except ValueError:
+        abort(make_response(jsonify("invalid ID. ID must be an integer"), 400))
+
+    planet = Planet.query.get(planet_id)
+
+    if planet is None:
+        response_str = f"Planet with #{planet_id} was not found in the database"
+        abort(make_response(jsonify("invalid ID. ID was not found"), 404))
+
+    return planet
+
+
+@planet_bp.route("/<planet_id>", methods=["GET"])
+def get_specific_planet(planet_id):
+    planet = get_one_planet_or_abort(planet_id)
+
+    planet_dict = {
+        "id": planet.id,
+        "name": planet.name,
+        "description": planet.description,
+        "position": planet.position
+    }
+    
+    return jsonify(planet_dict), 200
+
+
+@planet_bp.route("/<planet_id>", methods=["PUT"])
+def update_planet(planet_id):
+    planet = get_one_planet_or_abort(planet_id)
+
+    request_body = request.get_json()
+
+    if "name" not in request_body \
+    or "description" not in request_body \
+    or "position" not in request_body:
+        return jsonify({"message": "Request must include: name, description, position"})
+
+    planet.name = request_body["name"]
+    planet.description = request_body["description"]
+    planet.position = request_body["position"]
+            
+    db.session.commit()
+
+    return jsonify({"message":f"Successfully replaced planet with planet id: {planet_id}"}), 200
+
+
+@planet_bp.route("/<planet_id>", methods=["DELETE"])
+def delete_planet(planet_id):
+    planet = get_one_planet_or_abort(planet_id)
+
+    db.session.delete(planet)
+    db.session.commit()
+
+    return jsonify({"message":f"Successfully deleted planet with planet id: {planet_id}"}), 200
