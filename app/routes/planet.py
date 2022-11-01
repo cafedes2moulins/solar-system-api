@@ -21,7 +21,25 @@ planet_bp = Blueprint( "planet_bp", __name__, url_prefix="/planet")
 
 @planet_bp.route("", methods=["GET"])
 def get_planets():
+    name_param = request.args.get("name")
+    description_param = request.args.get("description")
+    position_param = int(request.args.get("position"))
+
     planets = Planet.query.all()
+    
+    if name_param is None and \
+    description_param is None and \
+    position_param is None:
+        pass
+    else:
+        if name_param:
+            planets = [x for x in planets if x.name == name_param]
+        if description_param:
+            planets = [x for x in planets if x.description == description_param]
+        if position_param:
+            planets = [x for x in planets if int(x.position) == position_param]
+
+    
     response = []
     for planet in planets:
         planet_dict = {
