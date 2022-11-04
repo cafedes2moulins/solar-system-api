@@ -2,22 +2,25 @@ from flask import Blueprint, jsonify, request, abort, make_response
 from app import db
 from app.models.planet import Planet
 
-# class Planet: 
-#     def __init__(self, id, name, description, position):
-#         self.id = id
-#         self.name = name
-#         self.description = description
-#         self.position = position
-
-
-# planets = [
-#     Planet(1, "Mercury", "gray and small", 1),
-#     Planet(2, "Venus", "gold and large", 2),
-#     Planet(3, "Earth", "greenish and blueish and largish", 3)
-# ]
 
 
 planet_bp = Blueprint( "planet_bp", __name__, url_prefix="/planet")
+
+
+def get_one_planet_or_abort(planet_id):
+    try:
+        verified_id = int(planet_id)
+    except ValueError:
+        abort(make_response(jsonify("invalid ID. ID must be an integer"), 400))
+
+    planet = Planet.query.get(planet_id)
+
+    if planet is None:
+        response_str = f"Planet with #{planet_id} was not found in the database"
+        abort(make_response(jsonify("invalid ID. ID was not found"), 404))
+
+    return planet
+
 
 @planet_bp.route("", methods=["GET"])
 def get_planets():
@@ -40,16 +43,8 @@ def get_planets():
             planets = [x for x in planets if int(x.position) == position_param]
 
     
-    response = []
-    for planet in planets:
-        planet_dict = {
-            "id": planet.id,
-            "name": planet.name,
-            "description": planet.description,
-            "position": planet.position
-        }
-        response.append(planet_dict)
-
+    response = [planet.to_dict() for planet in planets]
+    
     return jsonify(response), 200
     
 
@@ -58,11 +53,8 @@ def get_planets():
 def add_planet():
     request_body = request.get_json()
 
-    new_planet = Planet(
-            name = request_body["name"],
-            description = request_body["description"],
-            position = request_body["position"]
-    )
+    new_planet = Planet.from_dict(request_body)
+
 
     db.session.add(new_planet)
     db.session.commit()
@@ -71,33 +63,14 @@ def add_planet():
 
 
 
-def get_one_planet_or_abort(planet_id):
-    try:
-        verified_id = int(planet_id)
-    except ValueError:
-        abort(make_response(jsonify("invalid ID. ID must be an integer"), 400))
-
-    planet = Planet.query.get(planet_id)
-
-    if planet is None:
-        response_str = f"Planet with #{planet_id} was not found in the database"
-        abort(make_response(jsonify("invalid ID. ID was not found"), 404))
-
-    return planet
-
 
 @planet_bp.route("/<planet_id>", methods=["GET"])
 def get_specific_planet(planet_id):
     planet = get_one_planet_or_abort(planet_id)
-
-    planet_dict = {
-        "id": planet.id,
-        "name": planet.name,
-        "description": planet.description,
-        "position": planet.position
-    }
     
-    return jsonify(planet_dict), 200
+    return jsonify(planet.to_dict()), 200
+
+
 
 
 @planet_bp.route("/<planet_id>", methods=["PUT"])
