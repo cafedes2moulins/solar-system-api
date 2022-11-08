@@ -26,10 +26,10 @@ def get_one_planet_or_abort(planet_id):
 def get_planets():
     name_param = request.args.get("name")
     description_param = request.args.get("description")
-    position_param = int(request.args.get("position"))
+    position_param = (request.args.get("position"))
 
     planets = Planet.query.all()
-    
+    print(request.args)
     if name_param is None and \
     description_param is None and \
     position_param is None:
@@ -40,7 +40,7 @@ def get_planets():
         if description_param:
             planets = [x for x in planets if x.description == description_param]
         if position_param:
-            planets = [x for x in planets if int(x.position) == position_param]
+            planets = [x for x in planets if int(x.position) == int(position_param)]
 
     
     response = [planet.to_dict() for planet in planets]
